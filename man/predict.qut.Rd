@@ -1,5 +1,6 @@
 \name{predict.qut}
 \alias{predict.qut}
+\alias{coef.qut}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Make predictions from a "qut" object.
@@ -9,6 +10,7 @@ Similar to other predict methods, this function predicts fitted values from a fi
 }
 \usage{
 \method{predict}{qut}(object, newx, mode = "glm", offset = NULL,...)
+\method{coef}{qut}(object, mode = "glm",...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -41,9 +43,10 @@ Similar to other predict methods, this function predicts fitted values from a fi
 	\code{\link{qut}}
 }
 \examples{
+
 	x=matrix(rnorm(100*20),100,20)
 	y1=x[,1]*10+rnorm(100)
-	y2=as.numeric(binomial()$linkinv(x[,1]*10+rnorm(100))>0.5)
+	y2=as.numeric(binomial()$linkinv(x[,1]*10+1)>0.5)
 
 	fit1=qut(y1,x,family=gaussian,sigma=1)
 	predict(fit1,newx=x[1:5,])
@@ -54,6 +57,9 @@ Similar to other predict methods, this function predicts fitted values from a fi
 	as.numeric(predict(fit2,newx=x[2:5,])>0.5)
 	as.numeric(predict(fit2,newx=x[2:5,],mode='lasso')>0.5)
 	y2[2:5]
+	
+	coef(fit2,mode='lasso')
+	coef(fit2,mode='glm')
 
 }
 

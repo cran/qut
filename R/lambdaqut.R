@@ -1,5 +1,5 @@
 lambdaqut <-
-function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE){
+function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE,beta0=NA){
 #FUNCTION TO OBTAIN THE QUANTILE UNIVERSAL THRESHOLD
 
 	#Hidden function for vectorized bootstrapping
@@ -60,32 +60,34 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 		if(intercept) A=cBind(rep(1,n),A)  #if there is an intercept (column of ones)
 
 		#Estimate beta0 as glm(y~A)
-		beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef	
+		if(family$family=='gaussian') beta0=rep(0,ncol(A))
+		else if(!is.numeric(beta0)) beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
+		else if(length(beta0)!=(length(no.penalty)+intercept)) stop("length of beta0 is different from the number of unpenalized covariates or the intercept has not been included")
 		muhat=family$linkinv(as.matrix(A)%*%beta0+O)
 	}
 		
 	#Set default alpha.level
 	if(alpha.level=='default')	alpha.level=1/(sqrt(pi*log(p)))
 
-	#adjustment gamma to the quantile (existence of glm)
-	gamma=1
-	if(intercept&is.null(no.penalty)){	
-		if(family$family=='poisson') gamma=1-exp(-n*muhat[1])
-		else if(family$family=='binomial') gamma=1-muhat[1]^n+(1-muhat[1])^n
-	}
-	else warning("Adjustment gamma for glm existence is not considered")
+	#Check if A=1 and there is an explicit characterization of D
+	if(!(intercept&is.null(no.penalty)&sum(O==0)==n)) warning("Explicit characterization of D is not defined")
 
 	#Monte Carlo Simulation of the null model
+	znotinD=0
 	if(family$family=='gaussian') z=matrix(rnorm(n*M,mean=as.vector(muhat),sd=1),n,M)
 	else if(family$family=='poisson'){
 		z=matrix(rpois(n*M,lambda=as.vector(muhat)),n,M)
+		znotinD=sum(apply(z,2,sum)==0)
 		z=z[,apply(z,2,sum)!=0]
 	}	
 	else if(family$family=='binomial'){
 		z=matrix(rbinom(n*M,size=1,prob=as.vector(muhat)),n,M)
+		znotinD=sum((apply(z,2,sum)==0)|(apply(z,2,sum)==n))
 		z=z[,(apply(z,2,sum)!=0)&(apply(z,2,sum)!=n)]
 	}
 	else stop("Not available family")
+
+	if(znotinD>(M-2)) stop("Can't generate valid simulations under the null hypothesis, try increasing M")
 	
 	#obtain estimate of beta0 for each simulation
 	if(!intercept&is.null(no.penalty)){
@@ -108,7 +110,7 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 		
 		#quantile-based standardization
 		if(qut.standardize){
-			divX=apply(abs(bp),1,quantile,prob=(1-alpha.level)/gamma)
+			divX=apply(abs(bp),1,quantile,prob=(1-alpha.level))
 			divX[which(divX==0)]=1
 			
 			#Alignment/scaling
@@ -125,7 +127,7 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 		if(qut.standardize){
 			bp=abs(t(X)%*%(z-muhatZ))
 			scale.factor=rep(1,p)
-			divX=apply(abs(bp),1,quantile,prob=(1-alpha.level)/gamma)
+			divX=apply(abs(bp),1,quantile,prob=(1-alpha.level))
 			divX[which(divX==0)]=1
 			
 			#Alignment/scaling
@@ -134,15 +136,13 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 
 		#Bootstrapping
 		bp=apply(rbind(muhatZ,z),2,qutbootstrap)
-		resultsMC=apply(bp,2,max,na.rm=TRUE)
-		lambda=quantile(resultsMC, prob=(1-alpha.level)/gamma)
 	}
 	
 	#Obtain distribution of Lambda=max(X'z)
 	resultsMC=apply(bp,2,max,na.rm=TRUE)
-	
+	resultsMC=c(resultsMC,rep(Inf,znotinD))
 	#obtain lambda.qut for the given quantile
-	lambda=quantile(resultsMC, prob=(1-alpha.level)/gamma)
+	lambda=quantile(resultsMC, prob=(1-alpha.level))
 	
 	lambdamax=max(abs(t(X)%*%(y-muhat)))
 	

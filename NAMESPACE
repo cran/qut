@@ -1,7 +1,8 @@
-export(qut,lambdaqut,sigmaqut,sigmarcv,predict.qut)
+export(qut,lambdaqut,sigmaqut,sigmarcv,predict.qut,coef.qut)
 import(Matrix, glmnet, lars)
 importFrom("stats", "coef", "gaussian", "glm", "glm.fit", "lm",
              "median", "predict", "quantile", "rbinom", "rnorm", "rpois",
              "var")
 			 
 S3method(predict, qut)
+S3method(coef, qut)

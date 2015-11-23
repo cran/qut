@@ -9,8 +9,8 @@ Variable selection with GLM-lasso choosing the penalty parameter \eqn{\lambda} w
 }
 \usage{
 qut(y,X,fit,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,
-intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma='qut',estimator='unbiased',
-type=c('glmnet','lars'),lambda.seq=0,penalty.factor=rep(1,p),
+intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iter',
+estimator='unbiased',type=c('glmnet','lars'),lambda.seq=0,penalty.factor=rep(1,p),
 lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=100,lambda=NULL,...)
 }
 \arguments{
@@ -27,7 +27,7 @@ lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=100,lambda=NULL,...)
 	response type (see above). Default is \code{gaussian}.
 }
   \item{alpha.level}{
-	level, such that quantile \eqn{\tau=(1-}\code{alpha.level}\eqn{)/\gamma}. Default is \eqn{1/(\sqrt{\pi\log(p)})}.
+	level, such that quantile \eqn{\tau=(1-}\code{alpha.level}). Default is \eqn{1/(\sqrt{\pi\log(p)})}.
 }
   \item{M}{
 	number of Monte Carlo Simulations to estimate the distribution \eqn{\Lambda}. Default is 1000.
@@ -45,8 +45,13 @@ a vector of length \code{n} that is included in the linear predictor. Useful for
 set TRUE if it is desired to bootstrap matrix X when computing the Quantile Universal Threshold (Random scenario). Default is TRUE.
 }
   \item{sigma}{
-	standard deviation of the Gaussian errors. Used only if family=\code{gaussian}. When sigma = 'qut', it is estimated based on the Quantile Universal Threshold; when sigma = 'rcv', it is estimated using Refitted Cross Validation in Fan et al. 2012; and when sigma = 'cv', it is estimated using cross validation as in Reid et al. 2013. If sigma is a positive real number, then that value is used for the standard deviation. 
+	standard deviation of the Gaussian errors. Used only if family=\code{gaussian}. When sigma = 'qut', it is estimated based on the Quantile Universal Threshold (default if \code{n <= 2p}); when sigma = 'rcv', it is estimated using Refitted Cross Validation in Fan et al. 2012; and when sigma = 'cv', it is estimated using cross validation as in Reid et al. 2013. If \code{sigma} is a positive real number, then that value is used for the standard deviation.
+	If \code{n>p} and sigma='ols' it is estimated using the ordinary least squeares estimator (default if \code{n>2p})
 }
+  \item{beta0}{
+	coefficients of the unpenalized covariates for generating the null data for the Quantile Universal Threshold. By default is 'iter' and it is estimated using one step iteration of the entire procedure. If 'noiter' then it is estimated without iterating.
+	If it is desired to set \code{beta0} in advance, then it should be a vector of size the number of unpenalized covariates including the intercept if \code{intercept=TRUE}, in the same order. If there are not unpenalized covariates and \code{intercept=TRUE}, then it must be a real number.
+}	
   \item{estimator}{
 	type of estimation of sigma when \code{sigma} = 'qut'. It can be equal to 'unbiased' (standard unbiased formula), or 'mle' (maximum likelihood formula).
 }
@@ -54,7 +59,7 @@ set TRUE if it is desired to bootstrap matrix X when computing the Quantile Univ
 algorithm for constructing the regularization path. It can be \code{lars} (type='lars') or \code{glmnet} (type='glmnet'). If family is not gaussian, penalty.factor is different from default, or offset different from NULL, glmnet will be always used. Default is 'glmnet'.
 }
   \item{lambda.seq}{
-preset lambda sequence when type = 'glmnet'. If \code{lambda.seq}<2 the sequence of lambdas goes decreasing from \code{lambda.max} to \code{lambda.qut}. if \code{lambda.seq}= 0 or 1, \code{lambda} sequence is equispaced on the log-scale, with \code{nlambda}=100 for 0 and \code{nlambda}=n for 1. Use \code{lambda.seq}=2 for \code{glmnet} default options. Default is 0.
+preset lambda sequence when type = 'glmnet'. If \code{lambda.seq}<2 the sequence of lambdas goes decreasing from \code{lambda.max} to \code{lambda.qut}. If \code{lambda.seq}= 0, \code{lambda} sequence is equispaced. If \code{lambda.seq}= 1, \code{lambda} sequence is equispaced in the log scale. Use \code{lambda.seq}=2 for \code{glmnet} default options. Default is 0.
 }
   \item{penalty.factor}{
 separate penalty factors can be applied to each coefficient. This is a number that multiplies lambda to allow differential shrinkage. Can be 0 for some variables, which implies no shrinkage, and that variable is always included in the model. Default is 1 for all variables (and implicitly infinity for variables listed in exclude). Note: the penalty factors are internally rescaled to sum to n, and the lambda sequence will reflect this change.

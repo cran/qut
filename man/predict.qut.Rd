@@ -43,23 +43,17 @@ Similar to other predict methods, this function predicts fitted values from a fi
 	\code{\link{qut}}
 }
 \examples{
-
-	x=matrix(rnorm(100*20),100,20)
+	set.seed(1234)
+	x=matrix(rnorm(200*20),200,20)
 	y1=x[,1]*10+rnorm(100)
-	y2=as.numeric(binomial()$linkinv(x[,1]*10+1)>0.5)
 
 	fit1=qut(y1,x,family=gaussian,sigma=1)
 	predict(fit1,newx=x[1:5,])
 	predict(fit1,newx=x[1:5,],mode='lasso')
 	y1[1:5]
 	
-	fit2=qut(y2,x,family=binomial)
-	as.numeric(predict(fit2,newx=x[2:5,])>0.5)
-	as.numeric(predict(fit2,newx=x[2:5,],mode='lasso')>0.5)
-	y2[2:5]
-	
-	coef(fit2,mode='lasso')
-	coef(fit2,mode='glm')
+	coef(fit1,mode='lasso')
+	coef(fit1,mode='glm')
 
 }
 

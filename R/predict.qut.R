@@ -9,10 +9,16 @@ function(object, newx, mode='glm',offset=NULL,...){
 	if(ncol(newx)!=length(object$beta[-1])) stop("newx should be a matrix with the same number of columns as covariates in the fitted model")
 	
 	if(mode=='lasso'){ #Predict with the lasso coefficients
-		if(class(object$fit)[1]=='lars') type='fit' else type='response'
-		newx=t(t(newx)/object$scale.factor)
-		out=predict(object$fit,newx=newx,type=type,s=object$lambda,mode='lambda',offset=offset)
-		if(class(object$fit)[1]=='lars') out=out$fit
+		if(class(object$fit)[1]=='slim'){
+			newx=t(t(newx)/object$scale.factor)
+			out=predict(object$fit,newdata=newx,lambda.idx=length(object$fit$lambda),Y.pred.idx=1:nrow(newx))[[1]]
+		}
+		else{
+			if(class(object$fit)[1]=='lars') type='fit' else type='response'
+			newx=t(t(newx)/object$scale.factor)
+			out=predict(object$fit,newx=newx,type=type,s=object$lambda,mode='lambda',offset=offset)
+			if(class(object$fit)[1]=='lars') out=out$fit
+		}
 	}
 	else if(mode=='glm'){ #Predict with the glm fitted coefficients
 		f=object$family()

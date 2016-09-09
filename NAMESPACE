@@ -1,5 +1,5 @@
-export(qut,lambdaqut,sigmaqut,sigmarcv,predict.qut,coef.qut)
-import(Matrix, glmnet, lars)
+export(qut,lambdaqut,sigmaqut,sigmarcv,predict.qut,coef.qut,slimsd)
+import(Matrix, glmnet, lars, flare)
 importFrom("stats", "coef", "gaussian", "glm", "glm.fit", "lm",
              "median", "predict", "quantile", "rbinom", "rnorm", "rpois",
              "var")

@@ -33,7 +33,7 @@ should intercept(s) be fitted (default=TRUE) or set to zero (FALSE).
 	Estimator of \eqn{\sigma}
 }
 \references{
-Variance estimation using refitted cross-validation in ultrahigh dimensional regression. Jianqing Fan, Shaojun Guo and Ning Hao. Journal of the Royal Statistical Society: Series B. 2012
+Jianqing Fan, Shaojun Guo and Ning Hao. Variance estimation using refitted cross-validation in ultrahigh dimensional regression. Journal of the Royal Statistical Society: Series B. 2012
 
 }
 \author{

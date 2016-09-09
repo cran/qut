@@ -5,7 +5,7 @@
 Quantile Universal Threshold
 }
 \description{
-Selection of a threshold parameter \eqn{\lambda} for GLM-lasso. The method consists in considering a null
+Selection of a threshold parameter \eqn{\lambda} for GLM-lasso and Square-root lasso. The method consists in considering a null
 model, finding the theoretical distribution of the threshold parameter under
 the null, and setting \eqn{\lambda} to an upper quantile of that distribution. Although
 this strategy does not use the data to select \eqn{\lambda} but simply considers
@@ -21,13 +21,11 @@ License: \tab GPL-2\cr
 
 }
 \author{
-Jairo Diaz <jairo.diaz@unige.ch>
+Jairo Diaz Rodriguez <jairo.diaz@unige.ch>
 }
 \references{
-Quantile universal threshold: model selection at
-the detection edge for high-dimensional
-generalized linear models, C. Giacobino, J. Diaz, S. Sardy, N. Hengartner.
+C. Giacobino, J. Diaz Rodriguez, S. Sardy, N. Hengartner. Quantile universal threshold for model selection. 2016
 }
-\keyword{ QUT, GLM, threshold, lasso, regularization }
+\keyword{ QUT, GLM, threshold, lasso, regularization,Square-root}
 
 

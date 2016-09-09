@@ -19,8 +19,12 @@ function(y,X,estimator='unbiased',intercept=TRUE,alpha.level='default',M=1000,qu
 			if(length(w2)>=1) fit2OLS=lm(y1~X1[,w2],offset=O2) else fit2OLS=lm(y1~1,offset=O2)
 			if(estimator=='unbiased'){ #Estimate sigma with unbiased estimator
 				
+				if(length(s1)<=length(w1)) sigma2.1=Inf else 
 				sigma2.1= sum(fit1OLS$res^2)/(length(s1)-length(w1)-1)
+				
+				if(length(s1)<=length(w2)) sigma2.2=Inf else 
 				sigma2.2= sum(fit2OLS$res^2)/(length(s1)-length(w2)-1)
+				
 			}
 			else if(estimator=='mle'){ #Estimate sigma with maximum likelihood estimator
 				sigma2.1=sum(fit1OLS$res^2)/(length(s1))

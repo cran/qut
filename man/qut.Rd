@@ -2,16 +2,17 @@
 \alias{qut}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Fit a low dimensional GLM with lasso using the Quantile Universal Threshold
+Fit a low dimensional GLM or Square-root lasso using the Quantile Universal Threshold
 }
 \description{
-Variable selection with GLM-lasso choosing the penalty parameter \eqn{\lambda} with the Quantile Universal Threshold. The procedure goes towards sparse estimation of the coefficients for good selection of the important predictors.
+Variable selection with GLM-lasso or Square-root lasso choosing the penalty parameter \eqn{\lambda} with the Quantile Universal Threshold. The procedure goes towards sparse estimation of the coefficients for good selection of the important predictors.
 }
 \usage{
-qut(y,X,fit,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,
+qut(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,
 intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iter',
-estimator='unbiased',type=c('glmnet','lars'),lambda.seq=0,penalty.factor=rep(1,p),
-lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=100,lambda=NULL,...)
+estimator='unbiased',type=c('glmnet','lars','flare'),lambda.seq=0,penalty.factor=rep(1,p),
+lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=ifelse(type=='flare',2,100),
+lambda=NULL,...)
 }
 \arguments{
   \item{y}{
@@ -27,7 +28,7 @@ lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=100,lambda=NULL,...)
 	response type (see above). Default is \code{gaussian}.
 }
   \item{alpha.level}{
-	level, such that quantile \eqn{\tau=(1-}\code{alpha.level}). Default is \eqn{1/(\sqrt{\pi\log(p)})}.
+	level, such that quantile \eqn{\tau=(1-}\code{alpha.level}). Default is 0.05.
 }
   \item{M}{
 	number of Monte Carlo Simulations to estimate the distribution \eqn{\Lambda}. Default is 1000.
@@ -56,7 +57,7 @@ set TRUE if it is desired to bootstrap matrix X when computing the Quantile Univ
 	type of estimation of sigma when \code{sigma} = 'qut'. It can be equal to 'unbiased' (standard unbiased formula), or 'mle' (maximum likelihood formula).
 }
   \item{type}{
-algorithm for constructing the regularization path. It can be \code{lars} (type='lars') or \code{glmnet} (type='glmnet'). If family is not gaussian, penalty.factor is different from default, or offset different from NULL, glmnet will be always used. Default is 'glmnet'.
+algorithm for solving the optimization problem. It can be \code{lars} (\code{type}='lars') or \code{glmnet} (\code{type}='glmnet') for GLM-lasso, or \code{flare} (\code{type}='flare') for Square-root lasso. For GLM-lasso, if family is not gaussian, penalty.factor is different from default, or offset different from NULL, glmnet will be always used. Default is 'glmnet'.
 }
   \item{lambda.seq}{
 preset lambda sequence when type = 'glmnet'. If \code{lambda.seq}<2 the sequence of lambdas goes decreasing from \code{lambda.max} to \code{lambda.qut}. If \code{lambda.seq}= 0, \code{lambda} sequence is equispaced. If \code{lambda.seq}= 1, \code{lambda} sequence is equispaced in the log scale. Use \code{lambda.seq}=2 for \code{glmnet} default options. Default is 0.
@@ -71,7 +72,7 @@ smallest value for lambda, as a fraction of \code{lambda.max}. As in \code{glmne
 the number of \code{lambda}. As in \code{glmnet}. Default is 100.
 }
   \item{lambda}{
-	a user supplied \code{lambda} sequence. As in \code{glmnet}.
+	a user supplied \code{lambda} sequence. As in \code{glmnet}. Not used when \code{type}='flare'.
 }
 
   \item{\dots}{
@@ -84,23 +85,19 @@ the number of \code{lambda}. As in \code{glmnet}. Default is 100.
   \item{fit }{object fitted by \code{glmnet} or \code{lars}.}
   \item{beta }{coefficients obtained with the Quantile Universal Threshold.}
   \item{betaglm }{coefficients obtained fitting GLM with the non zero coefficients in \code{beta}.}
+  \item{beta0 }{estimated value of the intercept when family is not \code{gaussian}.}
   \item{family}{response type}
   \item{sigma}{standard deviation estimate of the errors (when family=\code{gaussian})}
   \item{scale.factor}{scale factor used for standardizing \eqn{X}.}
 }
 \references{
-Quantile universal threshold selection with an
-application in generalized linear models with LASSO, C. Giacobino, J. Diaz, S. Sardy, N. Hengartner.
-
-Quantile universal threshold: model selection at the detection edge for high-dimensional linear regression, J. Diaz, S. Sardy.
-
-Variance estimation using refitted cross-validation in ultrahigh dimensional regression. Jianqing Fan, Shaojun Guo and Ning Hao. Journal of the Royal Statistical Society: Series B. 2012
-
-A Study of Error Variance Estimation in Lasso Regression. Stephen Reid, Robert Tibshirani, and Jerome Friedman. 2013
+C. Giacobino, J. Diaz, S. Sardy, N. Hengartner. Quantile universal threshold for model selection. 2016
+Jianqing Fan, Shaojun Guo and Ning Hao. Variance estimation using refitted cross-validation in ultrahigh dimensional regression. Journal of the Royal Statistical Society: Series B. 2012
+Stephen Reid, Robert Tibshirani, and Jerome Friedman. A Study of Error Variance Estimation in Lasso Regression. 2013
 
 }
 \author{
-Jairo Diaz
+Jairo Diaz Rodriguez
 }
 
 
@@ -108,7 +105,7 @@ Jairo Diaz
  \code{\link{lambdaqut}}
 }
 \examples{
-
+set.seed(1234)
 X=matrix(rnorm(50*500),50,500)
 beta=c(rep(10,5),rep(0,500-5))
 y=X \%*\% beta+rnorm(50)

@@ -4,7 +4,7 @@ function(object, mode='glm',...){
 	else{
 		if(!attr(object$betaglm,'converged')){
 			warning('GLM did not converged, returning LASSO coefficients')
-			return(object$lasso)
+			return(object$beta)
 		}
 		else return(object$betaglm)
 	}

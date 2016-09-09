@@ -1,7 +1,7 @@
 lambdaqut <-
-function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE,beta0=NA){
+function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE,beta0=NA,method='lasso'){
 #FUNCTION TO OBTAIN THE QUANTILE UNIVERSAL THRESHOLD
-
+	
 	#Hidden function for vectorized bootstrapping
 	qutbootstrap <- function(curz){
 		ind=sample(1:n,n,replace=TRUE)
@@ -15,8 +15,10 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 			curbeta0=glm.fit(y=curz,x=as.matrix(A[ind,]),intercept=FALSE,family=family,offset=O[ind])$coef
 			curmuhat=family$linkinv(as.matrix(A[ind,])%*%curbeta0+O[ind]) 
 		}
-		curbp=abs(t(curX)%*%(curz-curmuhat))
 		
+		#zero thresholding function
+		curbp=bpfunc(X=curX,z=curz,muhatZ=curmuhat,method=method)
+		return(as.vector(curbp))
 	}
 	
 	#Hidden function for vectorized computation of the intercept for each of the Monte Carlo simulations of the NULL model
@@ -25,7 +27,27 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 		return(out$coefficients)
 	}
 	
+	#Hidden function for X'z or X'z/||z||
+	bpfunc=function(X,z,muhatZ,method){
+
+		if(method=='sqrtlasso'){
+			Eps=z-as.matrix(muhatZ)
+			xxx=colSums(Eps^2)   
+			unitEps = t(t(Eps) / sqrt(xxx))
+			bp= 1/sqrt(n) * abs(t(X) %*% unitEps)
+		}
+		else bp=abs(t(X)%*%(z-muhatZ))
+
+		return(bp)
+	}
+	
 	family=family()
+	
+	#Check for warnings in the case of Square Root Lasso
+	if(method=='sqrtlasso'&family$family!='gaussian'){
+		stop('Square root lasso is just for Gaussian family')
+	}
+	
 	n=nrow(X)
 	p=ncol(X)
 	X0=X
@@ -33,12 +55,11 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 	else O=offset
 
 	#Check for warnings
-	if(alpha.level!='default'){
-		if(alpha.level>1|alpha.level<0){
-			warning("alpha.level is not in [0,1] interval; set to default")
-			alpha.level='default'
-		}
+	if(alpha.level>1|alpha.level<0){
+		warning("alpha.level is not in [0,1] interval; set to 0.05")
+		alpha.level=0.05
 	}
+
 	if(M<=0){
 		warning("M is <=0; set to 1000")
         M=1000
@@ -72,22 +93,32 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 	#Check if A=1 and there is an explicit characterization of D
 	if(!(intercept&is.null(no.penalty)&sum(O==0)==n)) warning("Explicit characterization of D is not defined")
 
-	#Monte Carlo Simulation of the null model
+	#Do valid Monte Carlo Simulation of the null model
 	znotinD=0
-	if(family$family=='gaussian') z=matrix(rnorm(n*M,mean=as.vector(muhat),sd=1),n,M)
-	else if(family$family=='poisson'){
-		z=matrix(rpois(n*M,lambda=as.vector(muhat)),n,M)
-		znotinD=sum(apply(z,2,sum)==0)
-		z=z[,apply(z,2,sum)!=0]
-	}	
-	else if(family$family=='binomial'){
-		z=matrix(rbinom(n*M,size=1,prob=as.vector(muhat)),n,M)
-		znotinD=sum((apply(z,2,sum)==0)|(apply(z,2,sum)==n))
-		z=z[,(apply(z,2,sum)!=0)&(apply(z,2,sum)!=n)]
-	}
-	else stop("Not available family")
 
-	if(znotinD>(M-2)) stop("Can't generate valid simulations under the null hypothesis, try increasing M")
+	for(nMC in 1:2){
+		if(family$family=='gaussian') z=matrix(rnorm(n*M,mean=as.vector(muhat),sd=1),n,M)
+		else if(family$family=='poisson'){
+			z=matrix(rpois(n*M,lambda=as.vector(muhat)),n,M)
+			znotinD=sum(apply(z,2,sum)==0)
+			z=z[,apply(z,2,sum)!=0]
+		}	
+		else if(family$family=='binomial'){
+			z=matrix(rbinom(n*M,size=1,prob=as.vector(muhat)),n,M)
+			znotinD=sum((apply(z,2,sum)==0)|(apply(z,2,sum)==n))
+			z=z[,(apply(z,2,sum)!=0)&(apply(z,2,sum)!=n)]
+		}
+		else stop("Not available family")
+		
+		#Check if it was a valid simulation
+		if(znotinD<=(M-2)) nMC=2
+		else{ #NOT VALID MC simulation
+			#reestimate the intercept without interation
+			beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
+			muhat=family$linkinv(as.matrix(A)%*%beta0+O)
+		}
+	}
+	if(znotinD>(M-2)) stop("Can't generate valid simulations under the null hypothesis, try increasing M or changing the intercept")
 	
 	#obtain estimate of beta0 for each simulation
 	if(!intercept&is.null(no.penalty)){
@@ -104,8 +135,9 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 	if(!bootstrap){
 		#No Bootstrap Matrix X
 		
-		#X'z
-		bp=abs(t(X)%*%(z-muhatZ))
+		#zero thresholding function
+
+		bp=bpfunc(X=X,z=z,muhatZ=muhatZ,method=method)
 		scale.factor=rep(1,p)
 		
 		#quantile-based standardization
@@ -116,8 +148,8 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 			#Alignment/scaling
 			X=t(t(X)/divX)
 			
-			#X'z for the standardized X matrix
-			bp=abs(t(X)%*%(z-muhatZ))
+			#zero thresholding function for the standardized X matrix
+			bp=bpfunc(X=X,z=z,muhatZ=muhatZ,method=method)
 		}
 	}
 	else{
@@ -125,7 +157,10 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 
 		#quantile-based standardization
 		if(qut.standardize){
-			bp=abs(t(X)%*%(z-muhatZ))
+		
+			#zero thresholding function
+					
+			bp=bpfunc(X=X,z=z,muhatZ=muhatZ,method=method)
 			scale.factor=rep(1,p)
 			divX=apply(abs(bp),1,quantile,prob=(1-alpha.level))
 			divX[which(divX==0)]=1
@@ -144,7 +179,11 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 	#obtain lambda.qut for the given quantile
 	lambda=quantile(resultsMC, prob=(1-alpha.level))
 	
-	lambdamax=max(abs(t(X)%*%(y-muhat)))
+	#lambda max
+	#bp=abs(t(X)%*%(y-muhat))
+	bp=bpfunc(X=X,z=y,muhatZ=muhat,method=method)
+	lambdamax=max(bp)
+	
 	
 	if(!is.null(no.penalty)){
 		X0[,-no.penalty]=X
@@ -158,6 +197,7 @@ function(y,X,family=gaussian,alpha.level='default',M=1000,qut.standardize=TRUE,i
 	out$scale.factor=scale.factor
 	out$lambda.max=lambdamax
 	out$lambda=lambda
+	out$beta0=beta0
 	out$Xnew=X
 	return(out)
 	

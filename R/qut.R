@@ -58,6 +58,10 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		if(f$family!='gaussian'){
 			stop('Square root lasso is for Gaussian family')
 		}
+		if(qut.standardize){
+			warning('Square root lasso is based on flare package and requires its own standardization; qut.standardize set to FALSE')
+			qut.standardize=FALSE
+		}
 	}
 	if(type=='lars'&f$family!='gaussian'){
 		warning("type lars is just for gaussian family; set to glmnet")
@@ -106,9 +110,18 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		betaglm[1]=NA
 		warning('Difficulty estimating this model, try increasing M')
 		
-		if(type=='flare') lambdamax=outqut$lambda.max
-		else if(type=='glmnet') lambdamax=outqut$lambda.max*sum(penalty.factor)/p
-		else lambdamax=outqut$lambda.max*n
+		if(type=='flare'){
+			lambdamax=outqut$lambda.max
+			lambdamedian=outqut$lambda.median
+		}
+		else if(type=='glmnet'){
+			lambdamax=outqut$lambda.max*sum(penalty.factor)/p
+			lambdamedian=outqut$lambda.median*sum(penalty.factor)/p
+		}
+		else{
+			lambdamax=outqut$lambda.max*n
+			lambdamedian=outqut$lambda.median*n
+		}
 	}
 	
 	#No problems with lambda
@@ -144,6 +157,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		
 		#Fit model
 		if(type=='glmnet'){ #GLMNET
+			lambdamedian=outqut$lambda.median*sum(penalty.factor)/p
 			lambdamax=outqut$lambda.max*sum(penalty.factor)/p
 			#set sequence of lambdas
 			if(lambda.seq!=2){ #starting from lambdaqut to lambdamax
@@ -174,6 +188,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		
 			#LASSO fit
 			lambdamax=outqut$lambda.max*n
+			lambdamedian=outqut$lambda.median*n
 			X=X/penalty.factor
 			
 			if(missing(fit)) fit=lars(X,y,intercept=intercept,normalize=FALSE,...)
@@ -194,9 +209,10 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		
 		else if(type=='flare'){
 			lambdamax=outqut$lambda.max*n
+			lambdamedian=outqut$lambda.median*n
 			X=X/penalty.factor
 			
-			fit=slimsd(X,y,nlambda=nlambda,lambda.min.value=lambdaqut)
+			fit=slim(X,y,nlambda=nlambda,lambda.min.value=lambdaqut)
 			beta=fit$beta[,nlambda]
 		
 			beta0=mean(y)-mean(X%*%beta)
@@ -216,6 +232,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 	out=NULL
 	out$lambda=lambdaqut
 	out$lambda.max=lambdamax/n
+	out$lambda.median=lambdamedian/n
 	out$scale.factor=outqut$scale.factor
 	out$beta=beta
 	if(class(betaglm)[1]=="try-error") warning("No valid GLM fits were possible to find")

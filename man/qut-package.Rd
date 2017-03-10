@@ -26,6 +26,6 @@ Jairo Diaz Rodriguez <jairo.diaz@unige.ch>
 \references{
 C. Giacobino, J. Diaz Rodriguez, S. Sardy, N. Hengartner. Quantile universal threshold for model selection. 2016
 }
-\keyword{ QUT, GLM, threshold, lasso, regularization,Square-root}
+\keyword{QUT, GLM, threshold, lasso, regularization, square-root lasso, zero-threshold}
 
 

@@ -34,7 +34,7 @@ lambda=NULL,...)
 	number of Monte Carlo Simulations to estimate the distribution \eqn{\Lambda}. Default is 1000.
 }
   \item{qut.standardize}{
-	standardize matrix X with a quantile-based standardization. Default is TRUE.
+	standardize matrix X with a quantile-based standardization. Default is TRUE. It is not used for sqrt-lasso.
 }
   \item{intercept}{
 	should intercept(s) be fitted (default=TRUE) or set to zero (FALSE).

@@ -12,8 +12,11 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 			curmuhat=muhatZ[ind,1]
 		}
 		else if(!is.null(no.penalty)|sum(O!=0)!=0){
-			curbeta0=glm.fit(y=curz,x=as.matrix(A[ind,]),intercept=FALSE,family=family,offset=O[ind])$coef
-			curmuhat=family$linkinv(as.matrix(A[ind,])%*%curbeta0+O[ind]) 
+			if(is.na(beta0)){  #if beta was estimated initially
+				curbeta0=glm.fit(y=curz,x=as.matrix(A[ind,]),intercept=FALSE,family=family,offset=O[ind])$coef
+				curmuhat=family$linkinv(as.matrix(A[ind,])%*%curbeta0+O[ind]) 
+			}
+			else curmuhat=family$linkinv(as.matrix(A[ind,])%*%beta0+O[ind]) #if beta0 was specified initially
 		}
 		
 		#zero thresholding function
@@ -23,18 +26,28 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	
 	#Hidden function for vectorized computation of the intercept for each of the Monte Carlo simulations of the NULL model
 	glm0=function(y,x,family,offset=offset){
-		out=glm.fit(y=y,x=x,intercept=FALSE,family=family,offset=offset)
-		return(out$coefficients)
+		if(is.na(beta0temp)){ #if beta was estimated initially
+			out=glm.fit(y=y,x=x,intercept=FALSE,family=family,offset=offset)
+			outbeta0=out$coefficients
+		}
+		else outbeta0=beta0 #if beta0 was specified initially
+		return(outbeta0)
 	}
 	
 	#Hidden function for X'z or X'z/||z||
 	bpfunc=function(X,z,muhatZ,method){
 
 		if(method=='sqrtlasso'){
+			#flare standardization
+			xm = matrix(rep(colMeans(X), n), nrow = n, ncol = p, byrow = T)
+			x1 = X - xm
+			sdxinv = 1/sqrt(colSums(x1^2)/(n - 1))
+			xx = x1 * matrix(rep(sdxinv, n), nrow = n, ncol = p, byrow = T)
+			
 			Eps=z-as.matrix(muhatZ)
 			xxx=colSums(Eps^2)   
 			unitEps = t(t(Eps) / sqrt(xxx))
-			bp= 1/sqrt(n) * abs(t(X) %*% unitEps)
+			bp= 1/sqrt(n) * abs(t(xx) %*% unitEps)
 		}
 		else bp=abs(t(X)%*%(z-muhatZ))
 
@@ -79,10 +92,15 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 			X=X[,-no.penalty]
 		}
 		if(intercept) A=cBind(rep(1,n),A)  #if there is an intercept (column of ones)
-
-		#Estimate beta0 as glm(y~A)
+		
 		if(family$family=='gaussian') beta0=rep(0,ncol(A))
-		else if(!is.numeric(beta0)) beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
+		
+		if(is.numeric(beta0)) beta0temp=beta0 
+		if(!is.numeric(beta0)){
+			#Estimate beta0 as glm(y~A)
+			beta0temp=NA
+			beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
+		}
 		else if(length(beta0)!=(length(no.penalty)+intercept)) stop("length of beta0 is different from the number of unpenalized covariates or the intercept has not been included")
 		muhat=family$linkinv(as.matrix(A)%*%beta0+O)
 	}
@@ -114,6 +132,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 		if(znotinD<=(M-2)) nMC=2
 		else{ #NOT VALID MC simulation
 			#reestimate the intercept without interation
+			warning('Intercept will be estimated without iteration since there were no valid simulations under null hypothesis with current intercept')
 			beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
 			muhat=family$linkinv(as.matrix(A)%*%beta0+O)
 		}
@@ -156,7 +175,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 		#Bootstrap Matrix X
 
 		#quantile-based standardization
-		if(qut.standardize){
+		if(qut.standardize&method!='sqrtlasso'){
 		
 			#zero thresholding function
 					
@@ -168,7 +187,6 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 			#Alignment/scaling
 			X=t(t(X)/divX)
 		}
-
 		#Bootstrapping
 		bp=apply(rbind(muhatZ,z),2,qutbootstrap)
 	}
@@ -182,6 +200,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	#lambda max
 	#bp=abs(t(X)%*%(y-muhat))
 	bp=bpfunc(X=X,z=y,muhatZ=muhat,method=method)
+	lambdamedian=median(bp)
 	lambdamax=max(bp)
 	
 	
@@ -191,11 +210,12 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 		X=X0
 	}
 	else scale.factor=divX
-
+		
 	#OUTPUT
 	out=NULL
 	out$scale.factor=scale.factor
 	out$lambda.max=lambdamax
+	#out$lambda.median=lambdamedian
 	out$lambda=lambda
 	out$beta0=beta0
 	out$Xnew=X

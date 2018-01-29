@@ -1,37 +1,57 @@
 qut <-
-function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iter',estimator='unbiased',type=c('glmnet','lars','flare'),lambda.seq=0,penalty.factor=rep(1,p),lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=ifelse(type=='flare',2,100),lambda=NULL,...){
+function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iterglm',estimator='unbiased',type=c('glmnet','lars','flare'),lambda.seq=0,penalty.factor=rep(1,p),lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=ifelse(type=='flare',2,100),lambda=NULL,...){
 #FUNCTION TO FIT GLM WITH THE QUANTILE UNIVERSAL THRESHOLD
 
 	#Hidden function to get glm fit with non-zero coefficients found by LASSO-GLM
-	betaGLMestimates=function(){
-		if(type=='glmnet') betatemp=beta[-1] else betatemp=beta
-		betaglm=betatemp*0
-		converged=TRUE
-		if(is.null(offset)) O=rep(0,n)
-		if(sum(betatemp!=0)>0){
-			if(intercept) outglm=glm(y~as.matrix(X0[,betatemp!=0]),family=family,offset=offset)
-			else outglm=glm(y~as.matrix(X0[,betatemp!=0])-1,family=family,offset=offset)
-			betaglm0=outglm$coef
-			converged=outglm$converged
-		}
-		else if(intercept){
-			outglm=glm(y~1,family=family,offset=offset)
-			betaglm0=outglm$coef
-			converged=outglm$converged
+	try_betaGLMestimates=function(silent=TRUE){
+		betaGLMestimates=function(){
+			if(type=='glmnet') betatemp=beta[-1] else betatemp=beta
+			betaglm=betatemp*0
+			converged=TRUE
+			if(is.null(offset)) O=rep(0,n)
+			if(sum(betatemp!=0)>0){
+				if(intercept) outglm=glm(y~as.matrix(X0[,betatemp!=0]),family=family,offset=offset)
+				else outglm=glm(y~as.matrix(X0[,betatemp!=0])-1,family=family,offset=offset)
+				betaglm0=outglm$coef
+				converged=outglm$converged
+			}
+			else if(intercept){
+				outglm=glm(y~1,family=family,offset=offset)
+				betaglm0=outglm$coef
+				converged=outglm$converged
+			}
+			
+			if(intercept){
+				betaglm[betatemp!=0]=betaglm0[-1]
+				betaglm=c(betaglm0[1],betaglm)
+			}
+			else{
+				betaglm[betatemp!=0]=betaglm0
+				betaglm=c(0,betaglm)
+			}
+			
+			names(betaglm)[1]='(Intercept)'	
+			names(betaglm)[-1]=1:p
+			attr(betaglm,'converged')=converged
+			return(betaglm)
 		}
 		
-		if(intercept){
-			betaglm[betatemp!=0]=betaglm0[-1]
-			betaglm=c(betaglm0[1],betaglm)
+		#Signaling to avoid any warning or error in the GLM estimates, since GLM might be highly unstable.
+		if(silent){
+			betaglm=tryCatch({betaGLMestimates()},
+				warning=function(w){
+					## Handle warning in GLM
+					message("handling warning: ", conditionMessage(w))
+					NA
+				},
+				error = function(w){
+					## Handle error in GLM
+					message("handling error: ", conditionMessage(w))
+					NA
+				}
+			)
 		}
-		else{
-			betaglm[betatemp!=0]=betaglm0
-			betaglm=c(0,betaglm)
-		}
-		
-		names(betaglm)[1]='(Intercept)'	
-		names(betaglm)[-1]=1:p
-		attr(betaglm,'converged')=converged
+		else betaglm=betaGLMestimates()
 		return(betaglm)
 	}
 
@@ -76,6 +96,9 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 		type='glmnet'
 	}
 	
+	#if beta0 is a number, then fix it to obtain lambdaqut
+	fixbeta0=is.numeric(beta0)
+	
 	#Perform one iteration to estimate beta0 when family is not Gaussian, and there is an intercept and/or there are unpenalized columns, and beta0 is unknown
 	if((beta0[1]=='iter'|beta0[1]=='iterglm')&!(!intercept&is.null(no.penalty))&f$family!='gaussian'){
 		#get qut estimates with beta0=glm(y~A)
@@ -84,11 +107,26 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 			type=type,lambda.seq=lambda.seq,penalty.factor=penalty.factor,lambda.min.ratio=lambda.min.ratio,nlambda=nlambda,lambda=lambda,...)	
 		#Get new value for beta0
 		if(intercept) indbeta0=c(1,no.penalty+1) else indbeta0=no.penalty+1
-		if(beta0[1]=='iter') beta0=outqut$beta[indbeta0]
-		else if (beta0[1]=='iterglm'){
-			if(attr(outqut$betaglm,'converged')==TRUE) beta0=outqut$betaglm[indbeta0]
-			else beta0=outqut$beta[indbeta0]
+		
+		if (beta0[1]=='iterglm'){
+			if(length(outqut$betaglm)==1&is.na(outqut$betaglm[1])){
+				#beta0=outqut$beta[indbeta0]
+				beta0=outqut$beta0
+			}
+			else beta0=outqut$betaglm[indbeta0]
 		}
+		else if(beta0[1]=='iter') beta0=outqut$beta[indbeta0]
+		
+		
+		
+		#if(f$family=='binomial'&intercept==TRUE&is.null(no.penalty)){
+		#	#check if it is a valid intercept 
+		#	curmu=f$linkinv(beta0)
+		#	if(curmu<0.05|curmu>0.95) beta0=outqut$beta[indbeta0]
+		#	curmu=f$linkinv(beta0)
+		#	if(curmu<0.05|curmu>0.95) beta0=outqut$beta0
+		#}
+		
 	}
 	else if(!is.numeric(beta0)) beta0=NA
 	
@@ -97,7 +135,12 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 	else method='lasso'
 	
 	#Obtain lambdaqut (Quantile Universal Threshold)
-	outqut=lambdaqut(y=y,X=X,alpha.level=alpha.level,M=M,qut.standardize=qut.standardize, family=family,intercept=intercept,no.penalty=no.penalty,offset=offset,bootstrap=bootstrap,beta0=beta0,method=method)
+	outqut=lambdaqut(y=y,X=X,alpha.level=alpha.level,M=M,qut.standardize=qut.standardize, family=family,intercept=intercept,no.penalty=no.penalty,offset=offset,bootstrap=bootstrap,beta0=beta0,method=method,fixbeta0=fixbeta0)
+	#Check if null model is obtained, and if so, go back to the estimation of beta0 under the null
+	if(!is.na(beta0)&outqut$lambda>outqut$lambda.max&f$family!='gaussian'){
+		outqut=lambdaqut(y=y,X=X,alpha.level=alpha.level,M=M,qut.standardize=qut.standardize, family=family,intercept=intercept,no.penalty=no.penalty,offset=offset,bootstrap=bootstrap,beta0=NA,method=method,fixbeta0=fixbeta0)
+	}
+	
 	X=outqut$Xnew #Get standardized matrix
 	lambdaqut=outqut$lambda
 	beta0=outqut$beta0 #Get estimated intercept
@@ -181,8 +224,8 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 			lambdaqut=lambdaqut/n
 
 			#Get GLM fitted coefficients
-			betaglm=try(betaGLMestimates(),silent=TRUE)
-		
+			betaglm=try_betaGLMestimates()
+			
 		}
 		else if(type=='lars'){ #LARS
 		
@@ -198,7 +241,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 			beta=beta/penalty.factor/outqut$scale.factor
 			
 			#Get GLM fitted coefficients
-			betaglm=try(betaGLMestimates(),silent=TRUE)
+			betaglm=try_betaGLMestimates(silent=FALSE)
 			
 			beta=c(beta0,beta)
 
@@ -219,7 +262,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 			beta=beta/penalty.factor/outqut$scale.factor
 			
 			#Get GLM fitted coefficients
-			betaglm=try(betaGLMestimates(),silent=TRUE)
+			betaglm=try_betaGLMestimates(silent=FALSE)
 			
 			beta=c(beta0,beta)
 
@@ -235,7 +278,7 @@ function(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,in
 	out$lambda.median=lambdamedian/n
 	out$scale.factor=outqut$scale.factor
 	out$beta=beta
-	if(class(betaglm)[1]=="try-error") warning("No valid GLM fits were possible to find")
+	if(length(betaglm)==1&is.na(betaglm[1])) warning("No valid GLM fits were possible to find")
 	else betaglm[is.na(betaglm)]=0
 	out$betaglm=betaglm
 	if(missing(fit)) out$fit=NA else out$fit=fit

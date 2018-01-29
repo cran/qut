@@ -9,7 +9,7 @@ Variable selection with GLM-lasso or Square-root lasso choosing the penalty para
 }
 \usage{
 qut(y,X,fit,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,
-intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iter',
+intercept=TRUE,offset=NULL,bootstrap=TRUE,sigma=ifelse(n>2*p,'ols','qut'),beta0='iterglm',
 estimator='unbiased',type=c('glmnet','lars','flare'),lambda.seq=0,penalty.factor=rep(1,p),
 lambda.min.ratio=ifelse(n<p,0.01,0.0001),nlambda=ifelse(type=='flare',2,100),
 lambda=NULL,...)
@@ -50,7 +50,7 @@ set TRUE if it is desired to bootstrap matrix X when computing the Quantile Univ
 	If \code{n>p} and sigma='ols' it is estimated using the ordinary least squeares estimator (default if \code{n>2p})
 }
   \item{beta0}{
-	coefficients of the unpenalized covariates for generating the null data for the Quantile Universal Threshold. By default is 'iter' and it is estimated using one step iteration of the entire procedure. If 'noiter' then it is estimated without iterating.
+	coefficients of the unpenalized covariates for generating the null data for the Quantile Universal Threshold. When is 'iterglm' (Default) or 'iter', it is estimated using one step iteration of the entire procedure with maximum likelihood estimation or the lasso estimation, respectively. If 'noiter' then it is estimated without iterating.
 	If it is desired to set \code{beta0} in advance, then it should be a vector of size the number of unpenalized covariates including the intercept if \code{intercept=TRUE}, in the same order. If there are not unpenalized covariates and \code{intercept=TRUE}, then it must be a real number.
 }	
   \item{estimator}{

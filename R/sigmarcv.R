@@ -38,7 +38,7 @@ function(y,X,cv=FALSE,fit=NA,intercept=TRUE){
 		flasso=fit
 		sigma.est1=NA
 		maxiter=0
-		while(is.na(sigma.est1)){
+		while(is.na(sigma.est1)|sigma.est1==0){
 			if(is.na(fit)) flasso     <- lars(X,y,type="lasso",eps=1e-10,use.Gram=F,intercept=intercept);
 			object     <- cv.lars(X,y,type="lasso",use.Gram=F,plot.it=F,se=FALSE)
 			beta.est   <- predict.lars(flasso,s=object$index[which.min(object$cv)],
@@ -59,7 +59,7 @@ function(y,X,cv=FALSE,fit=NA,intercept=TRUE){
 		maxiter=0
 		sigma.est3=NA
 		sigma.est4=NA
-		while(is.na(sigma.est3)|is.na(sigma.est4)){
+		while(is.na(sigma.est3)|is.na(sigma.est4)|(sigma.est3==0&sigma.est4==0)){
 			flasso     <- lars(x1,y1,type="lasso",eps=1e-10,use.Gram=F,intercept=intercept);
 			object     <- cv.lars(x1,y1,type="lasso",use.Gram=F,plot.it=F,se=FALSE)
 			beta.est1  <- predict.lars(flasso,s=object$index[which.min(object$cv)],

@@ -10,7 +10,7 @@ Computes the Quantile Universal Threshold for GLM-lasso.
 \usage{
 lambdaqut(y, X, family = gaussian, alpha.level = 0.05, M = 1000, 
 qut.standardize = TRUE, intercept = TRUE, no.penalty = NULL, offset = NULL,
-bootstrap=TRUE,beta0=NA,method='lasso')
+bootstrap=TRUE,beta0=NA,method='lasso',fixbeta0=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -45,11 +45,14 @@ bootstrap=TRUE,beta0=NA,method='lasso')
 set TRUE if it is desired to bootstrap matrix X when computing the Quantile Universal Threshold (Random scenario). Default is TRUE.
 }
 \item{beta0}{
-	coefficients of the unpenalized covariates for generating the null data for the Quantile Universal Threshold. By default is \code{NA} and it is estimated using the unpenalized covatiriates and/or the intercept if TRUE.
+	coefficients of the unpenalized covariates for generating the null data for the Quantile Universal Threshold. By default is \code{NA} and it is estimated using the unpenalized covariates and/or the intercept if TRUE.
 	If it is desired to set \code{beta0} in advance, then it should be a vector of size the number of unpenalized covariates including the intercept if \code{intercept=TRUE}, in the same order. If there are not unpenalized covariates and \code{intercept=TRUE}, then it must be a real number.
 }
 \item{method}{
-	Objective function for the zero thresholding. Select \code{lasso} for GLM-lasso or \code{sqrtlasso} for Square-root lasso.
+	objective function for the zero thresholding. Select \code{lasso} for GLM-lasso or \code{sqrtlasso} for Square-root lasso.
+}
+\item{fixbeta0}{
+	used when \code{beta0} is numeric. When TRUE, it does not estimate \code{beta0} for each monte carlo simulation.
 }
 }
 \value{

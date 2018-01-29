@@ -1,5 +1,5 @@
 lambdaqut <-
-function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE,beta0=NA,method='lasso'){
+function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,intercept=TRUE,no.penalty=NULL,offset=NULL,bootstrap=TRUE,beta0=NA,method='lasso',fixbeta0=FALSE){
 #FUNCTION TO OBTAIN THE QUANTILE UNIVERSAL THRESHOLD
 	
 	#Hidden function for vectorized bootstrapping
@@ -26,11 +26,11 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	
 	#Hidden function for vectorized computation of the intercept for each of the Monte Carlo simulations of the NULL model
 	glm0=function(y,x,family,offset=offset){
-		if(is.na(beta0temp)){ #if beta was estimated initially
+		if(!fixbeta0){ #estimate beta0 for each monte carlo
 			out=glm.fit(y=y,x=x,intercept=FALSE,family=family,offset=offset)
 			outbeta0=out$coefficients
 		}
-		else outbeta0=beta0 #if beta0 was specified initially
+		else outbeta0=beta0 #if beta0 was specified initially and it is not desired to estimate for each monte carlo
 		return(outbeta0)
 	}
 	
@@ -84,7 +84,10 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	if(family$family=='binomial'&((sum(y==0)==n)|(sum(y==1)==n))) stop("All your Binomial measures are zero or one")
 	
 	#initialize A matrix
-	if(!intercept&is.null(no.penalty)) muhat=family$linkinv(O)
+	if(!intercept&is.null(no.penalty)){
+		muhat=family$linkinv(O)
+		muhatfull=muhat
+	}
 	else{
 		A=c()
 		if(!is.null(no.penalty)){ 
@@ -93,16 +96,16 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 		}
 		if(intercept) A=cBind(rep(1,n),A)  #if there is an intercept (column of ones)
 		
-		if(family$family=='gaussian') beta0=rep(0,ncol(A))
+		#glm(y~A) required for obtaining lambda.max
+		beta0full=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
 		
-		if(is.numeric(beta0)) beta0temp=beta0 
 		if(!is.numeric(beta0)){
 			#Estimate beta0 as glm(y~A)
-			beta0temp=NA
-			beta0=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef
+			beta0=beta0full
 		}
 		else if(length(beta0)!=(length(no.penalty)+intercept)) stop("length of beta0 is different from the number of unpenalized covariates or the intercept has not been included")
 		muhat=family$linkinv(as.matrix(A)%*%beta0+O)
+		muhatfull=family$linkinv(as.matrix(A)%*%beta0full+O)
 	}
 		
 	#Set default alpha.level
@@ -129,7 +132,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 		else stop("Not available family")
 		
 		#Check if it was a valid simulation
-		if(znotinD<=(M-2)) nMC=2
+		if(znotinD<=(M-2)) break
 		else{ #NOT VALID MC simulation
 			#reestimate the intercept without interation
 			warning('Intercept will be estimated without iteration since there were no valid simulations under null hypothesis with current intercept')
@@ -199,7 +202,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	
 	#lambda max
 	#bp=abs(t(X)%*%(y-muhat))
-	bp=bpfunc(X=X,z=y,muhatZ=muhat,method=method)
+	bp=bpfunc(X=X,z=y,muhatZ=muhatfull,method=method)
 	lambdamedian=median(bp)
 	lambdamax=max(bp)
 	
@@ -215,7 +218,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 	out=NULL
 	out$scale.factor=scale.factor
 	out$lambda.max=lambdamax
-	#out$lambda.median=lambdamedian
+	out$lambda.median=lambdamedian
 	out$lambda=lambda
 	out$beta0=beta0
 	out$Xnew=X

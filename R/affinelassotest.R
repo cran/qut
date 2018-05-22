@@ -1,4 +1,4 @@
-affinelassotest=function(y,Xdata,family=gaussian,alpha,cc=NA,lambda.alpha=NA,outrescale=NA,intercept=T,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=F, composite=T, M=round(min(1.e4, max(1000,1.e9/nrow(X)/ncol(X))))){
+affinelassotest=function(y,Xdata,family=gaussian,alpha,beta0=NA,cc=NA,lambdas=NA,outrescale=NA,intercept=T,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=F, composite=T, M=round(min(1.e4, max(1000,1.e9/nrow(X)/ncol(X))))){
   ##
   ## Test H0: A beta = cc
   ##
@@ -28,15 +28,29 @@ affinelassotest=function(y,Xdata,family=gaussian,alpha,cc=NA,lambda.alpha=NA,out
     LAD=outrescale$LAD
     composite=outrescale$composite
     
-    if(sum(!is.na(lambda.alpha))==0){
-      if(family()$family=="gaussian") z=matrix(rnorm(N*M), N, M)
-      if(family()$family=="poisson") z=matrix(rpois(N*M, lambda=1), N, M)
-      if(family()$family=="binomial") z=matrix(rbinom(N*M, 1, prob=0.5), N, M)
+	  if(sum(!is.na(lambdas))==0){
+	    if(is.na(beta0)) beta0=0
+	    
+	    #Do MC with beta0
+      if(is.numeric(beta0)){
+        mu0=family()$linkinv(beta0)
+        
+        if(family()$family=="gaussian") z=matrix(rnorm(N*M), N, M)
+        if(family()$family=="poisson") z=matrix(rpois(N*M, lambda=mu0), N, M)
+        if(family()$family=="binomial") z=matrix(rbinom(N*M, 1, prob=mu0), N, M)
+      }
+	    #do permutation instead of MC
+	    else if(beta0=='permutation') z=matrix(sample(y,N*M,replace=TRUE),N,M)
       
+      #Avoid degenerated data in the MC
+      if(family()$family=="poisson") z=z[,apply(z==0,2,sum)!=N]
+      else z=z[,apply(z,2,max)!=apply(z,2,min)]
+      if(length(z)==0) stop("All Monte Carlo simulations are degenerated, try with different intercept")
+      if(M!=ncol(z)) warning("Some of the Monte Carlo simulations are degenerated are were removed")
       lambdas=apply(z,2,ztf, Xdata=X,family=family,intercept=intercept, group.sizes=group.sizes, LAD=LAD, outrescale=outrescale,composite=composite)
       lambda.alpha=quantile(lambdas, 1-alpha)
     }
-    else{lambdas=NA}
+    lambda.alpha=quantile(lambdas, 1-alpha)
     lambda.data=ztf(y,Xdata=X,family=family,intercept=intercept, group.sizes=group.sizes, LAD=LAD, outrescale=outrescale,composite=composite)
     rejectH0=(lambda.data>lambda.alpha)
   } 
@@ -47,6 +61,7 @@ affinelassotest=function(y,Xdata,family=gaussian,alpha,cc=NA,lambda.alpha=NA,out
   out$rejectH0=rejectH0
   out$lambdas=lambdas
   out$outrescale=outrescale
+  out$pvalue=1-ecdf(lambdas)(lambda.data)
   return(out)
 }
 #out0lasso=affinelassotest(yy,X,family,alpha, group.sizes=rep(1,ncol(X)), A=A)

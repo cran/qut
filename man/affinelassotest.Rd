@@ -8,7 +8,7 @@ Affine lasso test
 	Perform thresholding tests for null hypothesis of the form H0: A beta = c.
 }
 \usage{
-affinelassotest(y, Xdata, family = gaussian, alpha, cc = NA, lambda.alpha = NA, 
+affinelassotest(y, Xdata, family = gaussian, alpha, beta0=NA, cc = NA, lambdas = NA, 
 outrescale = NA, intercept = T, group.sizes = rep(1, ncol(X)), A = ncol(X), 
 LAD = F, composite = T, M = round(min(10000, max(1000, 1e+09/nrow(X)/ncol(X)))))
 }
@@ -26,11 +26,14 @@ LAD = F, composite = T, M = round(min(10000, max(1000, 1e+09/nrow(X)/ncol(X)))))
   \item{alpha}{
 	desired level of the test.
 }
+  \item{beta0}{
+	if known, value of the nuissance parameter. Otherwise it takes beta0=0, and the statistic is asymptotically a pivot for non-Gaussian.
+}
   \item{cc}{
 	vector c
 }
-  \item{lambda.alpha}{
-	if not provided, the code performs M Monte Carlo simulation to obtain the empirical distribution \eqn{\Lambda} and the corresponding value in the \eqn{\alpha}-quantile for testing. Otherwise, value in the \eqn{\alpha}-quantile for testing. Default is NA.
+  \item{lambdas}{
+	if not provided, the code performs M Monte Carlo simulation to obtain the empirical distribution \eqn{\Lambda} and the corresponding value in the \eqn{\alpha}-quantile for testing. Otherwise, vector with all the Monte Carlo values of lambda. Default is NA.
 }
   \item{outrescale}{
 	object containing all variables corresponding to the rescaling and test options. If not provided, this is calculated authomatically with function \code{processX}. Default is NA.
@@ -61,6 +64,7 @@ LAD = F, composite = T, M = round(min(10000, max(1000, 1e+09/nrow(X)/ncol(X)))))
   \item{rejectH0}{result of the test. TRUE if H0 is rejected.}
   \item{lambdas}{values of \eqn{\lambda} of the Monte Carlo simulation under the null hypothesis.}
   \item{outrescale}{object containing all the rescaling variables.}
+  \item{pvalue}{approximate p-value for current data.}
 }
 \references{
 	Thresholding tests. Sylvain Sardy, Caroline Giacobino, Jairo Diaz.

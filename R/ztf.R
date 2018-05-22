@@ -1,6 +1,12 @@
 ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=T,group.sizes=rep(1,ncol(Xdata)),LAD=F,outrescale=NA,composite=T,alpha=0,M=min(1.e4, max(1000,1.e10/nrow(Xdata)/ncol(Xdata)))){
   ## A beta = cc
   
+  if(min(y)==max(y)){
+    if((family()$family=="poisson"&y[1]==0)|family()$family!="poisson"){
+      stop("It is not possible to get the zero thresholding function of degenerated data")
+    }
+  } 
+  
   if(family()$family!="gaussian"& LAD) stop("LAD is not available for family different from Gaussian")
   if(!is.na(cc)&family()$family!="gaussian") stop("Currently, it is not possible to test beta=cc when cc different from zero for family different from Gaussian")
   if(family()$family!="gaussian") warning("The A matrix should be of the form [0 I] when family is different from Gaussian")
@@ -23,11 +29,16 @@ ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=T,group.sizes
   
   #center y (not necessary for gaussian)
   if(family()$family!="gaussian"){
-	warning("You might need to mean center X")
-	lmfit=glm(y~X0-1,family=family)
-	muhat=predict(lmfit, type="response")
-	muhatbar=mean(muhat)
-	yCentered=y-muhat
+    if((dim(X0)[2]==1)&(sum(X0)==length(y))){
+      muhat=rep(mean(y),length(y))
+    }
+    else{
+    	#warning("You might need to mean center X")
+    	lmfit=glm(y~X0-1,family=family)
+    	muhat=predict(lmfit, type="response")
+    }
+  	muhatbar=mean(muhat)
+  	yCentered=y-muhat
   }
   else yCentered=y
   

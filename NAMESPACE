@@ -1,6 +1,6 @@
 export(qut,lambdaqut,sigmaqut,sigmarcv,predict.qut,coef.qut,affinelassotest,processX,ztf)
 import(Matrix, glmnet, lars, flare)
-importFrom("stats", "sd", "coef", "gaussian", "glm", "glm.fit", "lm",
+importFrom("stats","ecdf","sd", "coef", "gaussian", "glm", "glm.fit", "lm",
              "median", "predict", "quantile", "rbinom", "rnorm", "rpois",
              "var")
 			 

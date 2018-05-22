@@ -94,7 +94,7 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 			A=as.matrix(X[,no.penalty]) #if there are more unpenalized coefficients
 			X=X[,-no.penalty]
 		}
-		if(intercept) A=cBind(rep(1,n),A)  #if there is an intercept (column of ones)
+		if(intercept) A=cbind(rep(1,n),A)  #if there is an intercept (column of ones)
 		
 		#glm(y~A) required for obtaining lambda.max
 		beta0full=glm.fit(y=y,x=as.matrix(A),intercept=FALSE,family=family,offset=offset)$coef

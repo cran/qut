@@ -58,12 +58,14 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
         ##rescaling by sd
         lambdas.alpha=apply(X,2,sd)
         X=t(t(X)/lambdas.alpha)
+		sf=lambdas.alpha
       }
       else {
         # Blockwise quantile rescaling
         lambdas.alpha=rep(NA,L)
         i=0
         Xr=c()
+        sf=c() #scale factor
         z=matrix(rnorm(N*M), N, M)
         if(LAD && (ncol(X0)>0)) {outlm=lm(z~X0-1); z=z-predict(outlm)}
         for(l in 1:L){
@@ -75,6 +77,7 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
           lambdas=sqrt(apply(u^2,2,sum))
           lambdas.alpha[l]=quantile(lambdas, 1-alpha)
           Xr=cbind(Xr, Xl/lambdas.alpha[l])
+          sf=c(sf,rep(lambdas.alpha[l],group.sizes[l]))
           i=i+group.sizes[l]
         }
         
@@ -85,16 +88,19 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
           lambda0=quantile(lambdas, 1-alpha)
           Xr2=Xr2/lambda0
           lambdas.alpha.composite=lambdas.alpha.composite*lambda0
+          sf2=lambdas.alpha.composite
         }
         X=Xr
         if(composite){
         	X=cbind(X,Xr2)
         	lambdas.alpha=c(lambdas.alpha, lambdas.alpha.composite)
+        	sf=c(sf,sf2)
         }
       }
     }
     else {
       lambdas.alpha=rep(1,L)
+      sf=rep(1,P)
     }
   }
   else {
@@ -105,6 +111,7 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
   out$rankXkerA=rankXkerA
   out$lambdas.alpha=lambdas.alpha
   out$Xrescaled=X
+  out$sf=sf
   out$XkerAProj=XkerAProj
   out$XkerAProj.mat=XkerAProj.mat
   out$group.sizes=group.sizes

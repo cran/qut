@@ -39,8 +39,8 @@ function(y,X,cv=FALSE,fit=NA,intercept=TRUE){
 		sigma.est1=NA
 		maxiter=0
 		while(is.na(sigma.est1)|sigma.est1==0){
-			if(is.na(fit)) flasso     <- lars(X,y,type="lasso",eps=1e-10,use.Gram=F,intercept=intercept);
-			object     <- cv.lars(X,y,type="lasso",use.Gram=F,plot.it=F,se=FALSE)
+			if(is.na(fit)) flasso     <- lars(X,y,type="lasso",eps=1e-10,use.Gram=FALSE,intercept=intercept);
+			object     <- cv.lars(X,y,type="lasso",use.Gram=FALSE,plot.it=FALSE,se=FALSE)
 			beta.est   <- predict.lars(flasso,s=object$index[which.min(object$cv)],
 							 type="coefficients",mode="fraction")$coef
 
@@ -60,8 +60,8 @@ function(y,X,cv=FALSE,fit=NA,intercept=TRUE){
 		sigma.est3=NA
 		sigma.est4=NA
 		while(is.na(sigma.est3)|is.na(sigma.est4)|(sigma.est3==0&sigma.est4==0)){
-			flasso     <- lars(x1,y1,type="lasso",eps=1e-10,use.Gram=F,intercept=intercept);
-			object     <- cv.lars(x1,y1,type="lasso",use.Gram=F,plot.it=F,se=FALSE)
+			flasso     <- lars(x1,y1,type="lasso",eps=1e-10,use.Gram=FALSE,intercept=intercept);
+			object     <- cv.lars(x1,y1,type="lasso",use.Gram=FALSE,plot.it=FALSE,se=FALSE)
 			beta.est1  <- predict.lars(flasso,s=object$index[which.min(object$cv)],
 						 type="coefficients",mode="fraction")$coef
 			ind1       <- which(abs(beta.est1)>0)
@@ -72,8 +72,8 @@ function(y,X,cv=FALSE,fit=NA,intercept=TRUE){
 				sigma.est3 <- sum((object$resid)^2)/(n-k-length(ind1))
 			}
 
-			flasso     <- lars(x2,y2,type="lasso",eps=1e-10,use.Gram=F,intercept=intercept);
-			object     <- cv.lars(x2,y2,type="lasso",use.Gram=F,plot.it=F,se=FALSE)
+			flasso     <- lars(x2,y2,type="lasso",eps=1e-10,use.Gram=FALSE,intercept=intercept);
+			object     <- cv.lars(x2,y2,type="lasso",use.Gram=FALSE,plot.it=FALSE,se=FALSE)
 			beta.est2  <- predict.lars(flasso,s=object$index[which.min(object$cv)],
 							type="coefficients",mode="fraction")$coef
 			ind2       <- which(abs(beta.est2)>0)

@@ -1,4 +1,4 @@
-processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=F, composite=T, M=min(1.e4, max(1000,1.e10/nrow(X)/ncol(X)))){
+processX=function(X,family=gaussian,alpha,intercept=TRUE,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=FALSE, composite=TRUE, M=min(1.e4, max(1000,1.e10/nrow(X)/ncol(X)))){
   ## linear model y=intercept+X beta+epsilon
   ##    s.t. A beta = b, if A is a matrix 
   ##    s.t. beta1=b, where beta=(beta0, beta1) and length(beta1)=A, if A is an integer
@@ -11,7 +11,7 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
   
   c0=(family()$family!="gaussian"& is.matrix(A))||(family()$family!="gaussian"& LAD)
   c1=(LAD & is.matrix(A))
-  if(LAD || family()$family!="gaussian") {X0=X[,0:(P-A), drop=F]; if(intercept) X0=cbind(1, X0)}
+  if(LAD || family()$family!="gaussian") {X0=X[,0:(P-A), drop=FALSE]; if(intercept) X0=cbind(1, X0)}
   
   if(!is.matrix(A)){A=cbind(matrix(0,nrow=A,ncol=ncol(X)-A) ,diag(A))}
   
@@ -36,7 +36,7 @@ processX=function(X,family=gaussian,alpha,intercept=T,group.sizes=rep(1,ncol(X))
 	  B=X %*% t(A) %*% solve(A%*%t(A))
 	  Av=svd(A, nv=ncol(A))$v
 	  if(ncol(A)>nrowA) { ## A has a kernel > {0}
-		K_A=Av[,(nrowA+1):ncol(A), drop=F]
+		K_A=Av[,(nrowA+1):ncol(A), drop=FALSE]
 		XK_A=X %*% K_A
 		qrXK_A=qr(XK_A)
 		rankXkerA=qrXK_A$rank

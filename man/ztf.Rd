@@ -8,8 +8,8 @@ Zero thresholding function
 	Obtains the value of the minimum regularization parameter that sets all coefficients to zero for different types of thresholding tests.
 }
 \usage{
-ztf(y,Xdata, family=gaussian, A=ncol(Xdata), cc=NA, intercept=T,
-group.sizes=rep(1,ncol(Xdata)), LAD=F, outrescale=NA, composite=T, alpha=0,
+ztf(y,Xdata, family=gaussian, A=ncol(Xdata), cc=NA, intercept=TRUE,
+group.sizes=rep(1,ncol(Xdata)), LAD=FALSE, outrescale=NA, composite=TRUE, alpha=0,
 M=min(1.e4, max(1000,1.e10/nrow(Xdata)/ncol(Xdata))))
 }
 

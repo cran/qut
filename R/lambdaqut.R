@@ -39,10 +39,10 @@ function(y,X,family=gaussian,alpha.level=0.05,M=1000,qut.standardize=TRUE,interc
 
 		if(method=='sqrtlasso'){
 			#flare standardization
-			xm = matrix(rep(colMeans(X), n), nrow = n, ncol = p, byrow = T)
+			xm = matrix(rep(colMeans(X), n), nrow = n, ncol = p, byrow = TRUE)
 			x1 = X - xm
 			sdxinv = 1/sqrt(colSums(x1^2)/(n - 1))
-			xx = x1 * matrix(rep(sdxinv, n), nrow = n, ncol = p, byrow = T)
+			xx = x1 * matrix(rep(sdxinv, n), nrow = n, ncol = p, byrow = TRUE)
 			
 			Eps=z-as.matrix(muhatZ)
 			xxx=colSums(Eps^2)   

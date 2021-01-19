@@ -8,8 +8,9 @@
 	Rescales and transforms the X matrix according to the desired parameters, and sets all the options required by the test.
 }
 \usage{
-processX(X, family = gaussian, alpha, intercept = T, group.sizes = rep(1, ncol(X)), 
-A = ncol(X), LAD = F, composite = T, M = min(10000, max(1000, 1e+10/nrow(X)/ncol(X))))
+processX(X, family = gaussian, alpha, intercept = TRUE, group.sizes = rep(1, ncol(X)), 
+A = ncol(X), LAD = FALSE, composite = TRUE, 
+M = min(10000, max(1000, 1e+10/nrow(X)/ncol(X))))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

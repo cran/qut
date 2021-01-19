@@ -1,4 +1,4 @@
-ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=T,group.sizes=rep(1,ncol(Xdata)),LAD=F,outrescale=NA,composite=T,alpha=0,M=min(1.e4, max(1000,1.e10/nrow(Xdata)/ncol(Xdata)))){
+ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=TRUE,group.sizes=rep(1,ncol(Xdata)),LAD=FALSE,outrescale=NA,composite=TRUE,alpha=0,M=min(1.e4, max(1000,1.e10/nrow(Xdata)/ncol(Xdata)))){
   ## A beta = cc
   
   if(min(y)==max(y)){
@@ -66,7 +66,7 @@ ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=T,group.sizes
   }
   
   
-  if(max(group.sizes)!=1 & composite==F){
+  if(max(group.sizes)!=1 & composite==FALSE){
   ## group lasso
     if(LAD) {outlm=lm(y~X0-1); y=y-predict(outlm); denom=1}
     num=0
@@ -97,7 +97,7 @@ ztf=function(y,Xdata,family=gaussian,A=ncol(Xdata),cc=NA,intercept=T,group.sizes
   }
 
   #O&+ test
-  if(max(group.sizes)!=1 & composite==T){
+  if(max(group.sizes)!=1 & composite==TRUE){
     ## composite lasso
     P=ncol(Xscaled)/2
     X1=Xscaled[,c(1:P)]

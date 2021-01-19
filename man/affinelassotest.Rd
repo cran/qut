@@ -9,8 +9,8 @@ Affine lasso test
 }
 \usage{
 affinelassotest(y, Xdata, family = gaussian, alpha, beta0=NA, cc = NA, lambdas = NA, 
-outrescale = NA, intercept = T, group.sizes = rep(1, ncol(X)), A = ncol(X), 
-LAD = F, composite = T, M = round(min(10000, max(1000, 1e+09/nrow(X)/ncol(X)))))
+outrescale = NA, intercept = TRUE, group.sizes = rep(1, ncol(X)), A = ncol(X), 
+LAD = FALSE, composite = TRUE, M = round(min(10000, max(1000, 1e+09/nrow(X)/ncol(X)))))
 }
 
 \arguments{

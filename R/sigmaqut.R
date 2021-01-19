@@ -73,8 +73,8 @@ function(y,X,estimator='unbiased',intercept=TRUE,alpha.level='default',M=1000,qu
 		
 		if (is.null(offset)){O1=NULL ;O2=NULL}
 		else{O1=offset[s1];O2=offset[-s1]}
-		fit1=glmnet(X1,y1,family="gaussian",intercept=intercept,standardize=F,offset=O1,...)
-		fit2=glmnet(X2,y2,family="gaussian",intercept=intercept,standardize=F,offset=O2,...)
+		fit1=glmnet(X1,y1,family="gaussian",intercept=intercept,standardize=FALSE,offset=O1,...)
+		fit2=glmnet(X2,y2,family="gaussian",intercept=intercept,standardize=FALSE,offset=O2,...)
 		#lambda qut for each data 
 		outqut=lambdaqut(y=y1,X=X1,alpha.level=alpha.level,M=M,qut.standardize=qut.standardize,family=gaussian,intercept=intercept,no.penalty=no.penalty,offset=O1)
 		lambdaqut1=outqut$lambda

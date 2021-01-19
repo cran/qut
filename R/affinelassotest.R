@@ -1,4 +1,4 @@
-affinelassotest=function(y,Xdata,family=gaussian,alpha,beta0=NA,cc=NA,lambdas=NA,outrescale=NA,intercept=T,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=F, composite=T, M=round(min(1.e4, max(1000,1.e9/nrow(X)/ncol(X))))){
+affinelassotest=function(y,Xdata,family=gaussian,alpha,beta0=NA,cc=NA,lambdas=NA,outrescale=NA,intercept=TRUE,group.sizes=rep(1,ncol(X)),A=ncol(X), LAD=FALSE, composite=TRUE, M=round(min(1.e4, max(1000,1.e9/nrow(X)/ncol(X))))){
   ##
   ## Test H0: A beta = cc
   ##
@@ -46,7 +46,7 @@ affinelassotest=function(y,Xdata,family=gaussian,alpha,beta0=NA,cc=NA,lambdas=NA
       if(family()$family=="poisson") z=z[,apply(z==0,2,sum)!=N]
       else z=z[,apply(z,2,max)!=apply(z,2,min)]
       if(length(z)==0) stop("All Monte Carlo simulations are degenerated, try with different intercept")
-      if(M!=ncol(z)) warning("Some of the Monte Carlo simulations are degenerated are were removed")
+      if(M!=ncol(z)) warning("Some of the Monte Carlo simulations are degenerated and were removed")
       lambdas=apply(z,2,ztf, Xdata=X,family=family,intercept=intercept, group.sizes=group.sizes, LAD=LAD, outrescale=outrescale,composite=composite)
       lambda.alpha=quantile(lambdas, 1-alpha)
     }
